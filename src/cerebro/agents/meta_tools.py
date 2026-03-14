@@ -1,14 +1,18 @@
 """Meta-agent tools: the toolbox the cerebro uses to manage agents.
 
 These tools are passed to the cerebro's create_deep_agent() call.
-They provide CRUD operations for agent configs and MCP server management.
+They provide CRUD operations for agent configs, MCP server management,
+and the ability to run child agents.
 """
 
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any
 
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
 from cerebro.agents.config import DEFAULT_MODEL, AgentConfig
@@ -291,6 +295,69 @@ def remove_skill_from_agent(agent_name: str, skill_path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Agent execution tool
+# ---------------------------------------------------------------------------
+
+
+@tool
+async def run_agent(agent_name: str, message: str) -> str:
+    """Run a child agent and return its response.
+
+    Instantiates the agent from its YAML config, sends it a message,
+    and collects the full response. The child agent has access to its
+    configured MCP tools and skills.
+
+    Args:
+        agent_name: Name of the agent to run (must exist and be enabled).
+        message: The user message to send to the agent.
+
+    Returns:
+        JSON string with the agent's response text, or an error.
+    """
+    from cerebro.agents.runner import run_agent as _run_agent_graph
+
+    try:
+        graph = await _run_agent_graph(agent_name)
+    except ValueError as exc:
+        return json.dumps({"error": str(exc)})
+
+    # Each invocation gets a unique thread so child state is isolated.
+    thread_id = f"{agent_name}-{uuid.uuid4().hex[:8]}"
+    config = RunnableConfig(configurable={"thread_id": thread_id})
+
+    try:
+        result = await graph.ainvoke(
+            {"messages": [HumanMessage(content=message)]},
+            config=config,
+        )
+    except Exception as exc:
+        return json.dumps({"error": f"Agent '{agent_name}' failed: {exc}"})
+
+    # Extract the last AI message from the result.
+    messages = result.get("messages", [])
+    ai_messages = [m for m in messages if isinstance(m, AIMessage) and m.content]
+    if ai_messages:
+        response_text = ai_messages[-1].content
+    else:
+        response_text = "(Agent produced no text response)"
+
+    # Ensure response_text is a string (content can be str or list of blocks).
+    if isinstance(response_text, list):
+        response_text = "\n".join(
+            block.get("text", str(block)) if isinstance(block, dict) else str(block)
+            for block in response_text
+        )
+
+    return json.dumps(
+        {
+            "agent": agent_name,
+            "response": response_text,
+            "thread_id": thread_id,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
 # Collected tools list for the meta-agent
 # ---------------------------------------------------------------------------
 
@@ -308,4 +375,5 @@ def get_meta_tools() -> list[Any]:
         remove_mcp_server,
         add_skill_to_agent,
         remove_skill_from_agent,
+        run_agent,
     ]
