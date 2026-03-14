@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Launch the cerebro meta-agent via LangGraph Studio.
+# Launch the cerebro meta-agent.
 #
 # Prerequisites:
 #   1. Copy .env.example to .env and fill in your ANTHROPIC_API_KEY
 #   2. Install deps: pip install -e ".[dev]"
 #
 # Usage:
-#   ./run.sh          # starts LangGraph dev server on localhost:2024
-#   ./run.sh --port 3000  # custom port
+#   ./run.sh              # starts Chainlit chat UI on localhost:8000
+#   ./run.sh studio       # starts LangGraph dev server for LangSmith Studio
+#   ./run.sh --port 3000  # Chainlit on custom port
 
 set -euo pipefail
 
@@ -28,9 +29,19 @@ if [ -f ".env" ]; then
     set +a
 fi
 
-echo "Starting Cerebro via LangGraph Studio..."
-echo "  UI: http://localhost:2024 (connect via LangGraph Studio desktop app)"
-echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
-echo ""
+MODE="${1:-chat}"
 
-exec langgraph dev "$@"
+if [ "$MODE" = "studio" ]; then
+    shift
+    echo "Starting Cerebro via LangGraph Studio..."
+    echo "  Connect LangSmith Studio to http://localhost:2024"
+    echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
+    echo ""
+    exec langgraph dev "$@"
+else
+    echo "Starting Cerebro chat UI..."
+    echo "  UI: http://localhost:8000"
+    echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
+    echo ""
+    exec chainlit run app.py -w "$@"
+fi

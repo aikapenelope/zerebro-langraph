@@ -6,7 +6,7 @@ A **deepagents**-based meta-agent ("cerebro") that creates and manages other AI 
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  LangGraph Studio (localhost:2024)               │
+│  Chainlit UI (localhost:8000)                    │
 │  ┌───────────────────────────────────────────┐   │
 │  │  Cerebro (meta-agent)                     │   │
 │  │  - Claude Haiku 4.5                       │   │
@@ -61,7 +61,15 @@ cp .env.example .env
 ./run.sh
 ```
 
-This starts the LangGraph dev server on `localhost:2024`. Open **LangGraph Studio** desktop app and connect to `http://localhost:2024`.
+This starts the Chainlit chat UI on `http://localhost:8000`. Open it in your browser and start talking to the cerebro.
+
+**Alternative: LangSmith Studio**
+
+```bash
+./run.sh studio
+```
+
+This starts the LangGraph dev server on `localhost:2024` for use with LangSmith Studio (free tier works).
 
 ## Usage
 
@@ -78,12 +86,14 @@ Talk to the cerebro in natural language:
 
 ```
 zerebro-langraph/
+├── app.py                      # Chainlit chat UI entry point
+├── chainlit.md                 # Chainlit welcome page
 ├── langgraph.json              # LangGraph Studio config
 ├── pyproject.toml              # Dependencies and tool config
 ├── run.sh                      # Convenience launcher
 ├── .env.example                # Environment template
 └── src/cerebro/
-    ├── graph.py                # Entry point (Phoenix + cerebro init)
+    ├── graph.py                # LangGraph Studio entry point
     ├── agents/
     │   ├── cerebro.py          # Meta-agent factory (create_cerebro)
     │   ├── config.py           # AgentConfig dataclass
@@ -105,12 +115,12 @@ zerebro-langraph/
 |----------|-----------|
 | **deepagents** for all agents | Official LangChain meta-agent framework with middleware, skills, memory |
 | **Claude Haiku 4.5** only | Cost-effective, fast, sufficient for agent management tasks |
+| **Chainlit** for UI | Open-source chat UI, no external auth required, streaming support |
 | **MCP HTTP transport** | Avoids stdio issues (deepagents #641, #1778) |
 | **YAML configs on disk** | Simple, git-friendly, no database needed for agent definitions |
 | **SQLite checkpointer** | Zero-config persistence for single user |
 | **Phoenix optional** | Tracing is nice-to-have; system works without it |
-| **No LangSmith** | Free tier too limited (1 agent, 50 runs/mo) |
-| **No FastAPI** | LangGraph Studio handles the API layer |
+| **LangSmith Studio optional** | Free tier available for graph visualization and debugging |
 
 ## MCP Servers
 
@@ -135,13 +145,13 @@ To disable: remove `arize-phoenix` and `openinference-instrumentation-langchain`
 
 ```bash
 # Type checking
-pyright src/
+pyright src/ app.py
 
 # Linting
-ruff check src/
+ruff check src/ app.py
 
 # Formatting
-ruff format src/
+ruff format src/ app.py
 ```
 
 ## Requirements
@@ -149,4 +159,3 @@ ruff format src/
 - Python >= 3.11
 - Anthropic API key
 - MCP servers running (for agents that use them)
-- LangGraph Studio desktop app (for the visual UI)
