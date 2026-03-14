@@ -19,7 +19,7 @@ A **deepagents**-based meta-agent ("cerebro") that creates and manages other AI 
 │  │  │  Cerebro (meta-agent)                    │  │  │
 │  │  │  - Claude Haiku 4.5                      │  │  │
 │  │  │  - SQLite checkpointer                   │  │  │
-│  │  │  - 19 tools (9 built-in + 10 meta-tools) │  │  │
+│  │  │  - 20 tools (9 built-in + 11 meta-tools) │  │  │
 │  │  └──────────┬───────────────────────────────┘  │  │
 │  │             │ creates/manages/runs              │  │
 │  │  ┌──────────▼───────────────────────────────┐  │  │
@@ -38,36 +38,78 @@ A **deepagents**-based meta-agent ("cerebro") that creates and manages other AI 
 └─────────────────────┘
 ```
 
-## Quick Start
+## Quick Start (Docker — recommended for Windows)
 
-### 1. Clone and install (backend)
+### 1. Get your API keys
+
+You need two keys. Both go in the `.env` file:
+
+| Key | Where to get it | What it looks like |
+|-----|----------------|--------------------|
+| **ANTHROPIC_API_KEY** | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) | `sk-ant-api03-...` |
+| **LANGSMITH_API_KEY** | [smith.langchain.com/settings](https://smith.langchain.com/settings) (free tier) | `lsv2_pt_...` |
+
+### 2. Clone and configure
+
+```bash
+git clone https://github.com/aikapenelope/zerebro-langraph.git
+cd zerebro-langraph
+cp .env.example .env
+```
+
+Edit `.env` and paste your two keys:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-api03-your-real-key-here
+LANGSMITH_API_KEY=lsv2_pt_your-real-key-here
+```
+
+### 3. Run
+
+```bash
+docker compose up
+```
+
+Wait for both services to start (first run downloads dependencies, takes ~2-3 min).
+
+### 4. Open the UI
+
+Go to **http://localhost:3000** and configure:
+- **Deployment URL**: `http://localhost:2024`
+- **Assistant ID**: `cerebro`
+- **LangSmith API Key**: your `lsv2_pt_...` key
+
+Done. Start talking to the cerebro.
+
+## Quick Start (local — Mac/Linux)
+
+<details>
+<summary>Click to expand local setup instructions</summary>
+
+### 1. Install backend
 
 ```bash
 git clone https://github.com/aikapenelope/zerebro-langraph.git
 cd zerebro-langraph
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]" "langgraph-cli[inmem]"
 ```
 
-### 2. Configure environment
+### 2. Configure
 
 ```bash
 cp .env.example .env
-# Edit .env and set:
-#   ANTHROPIC_API_KEY  — required
-#   LANGSMITH_API_KEY  — required (free tier: https://smith.langchain.com)
+# Edit .env — set ANTHROPIC_API_KEY and LANGSMITH_API_KEY
 ```
 
-### 3. Start the backend
+### 3. Start backend
 
 ```bash
 ./run.sh
 ```
 
-This starts the LangGraph dev server on `http://localhost:2024`.
-
-### 4. Start the frontend (separate terminal)
+### 4. Start frontend (separate terminal)
 
 ```bash
 git clone https://github.com/langchain-ai/deep-agents-ui.git
@@ -79,7 +121,9 @@ yarn dev
 Open `http://localhost:3000` and configure:
 - **Deployment URL**: `http://localhost:2024`
 - **Assistant ID**: `cerebro`
-- **LangSmith API Key**: your `lsv2_pt_...` key (same as in `.env`)
+- **LangSmith API Key**: your `lsv2_pt_...` key
+
+</details>
 
 ## Usage
 
@@ -105,17 +149,19 @@ The deep-agents-ui shows:
 
 ```
 zerebro-langraph/
+├── Dockerfile                  # Backend container (langgraph dev)
+├── docker-compose.yml          # Both services: backend + frontend
 ├── langgraph.json              # LangGraph config (graphs.cerebro)
 ├── pyproject.toml              # Dependencies and tool config
-├── run.sh                      # Backend launcher
-├── .env.example                # Environment template
+├── run.sh                      # Local backend launcher
+├── .env.example                # Environment template (keys go here)
 └── src/cerebro/
     ├── graph.py                # Entry point (Phoenix + cerebro init)
     ├── agents/
     │   ├── cerebro.py          # Meta-agent factory (create_cerebro)
     │   ├── config.py           # AgentConfig dataclass
     │   ├── store.py            # YAML CRUD for agent configs
-    │   ├── meta_tools.py       # 10 meta-tools + run_agent
+    │   ├── meta_tools.py       # 11 meta-tools (CRUD + run_agent)
     │   ├── runner.py           # Instantiate agents from configs
     │   ├── mcp_registry.py     # MCP server registry
     │   ├── mcp_servers.yaml    # Pre-configured MCP servers
@@ -137,7 +183,7 @@ zerebro-langraph/
 | **YAML configs on disk** | Simple, git-friendly, no database needed for agent definitions |
 | **SQLite checkpointer** | Zero-config persistence for single user |
 | **LangSmith free tier** | Required for `langgraph dev` + SDK; free tier sufficient for personal use |
-| **Phoenix optional** | Additional tracing; system works without it |
+| **Docker Compose** | One command to run everything on any OS (Windows, Mac, Linux) |
 
 ## MCP Servers
 
@@ -151,6 +197,12 @@ Pre-configured in `src/cerebro/agents/mcp_servers.yaml`:
 | mem0 | Long-term memory | `MCP_MEM0_URL` |
 
 Set the URLs in your `.env` file. Servers are only connected when an agent's config references them.
+
+If your MCP servers run on the host machine (not in Docker), use `host.docker.internal` instead of `localhost` in the URLs:
+
+```env
+MCP_N8N_URL=http://host.docker.internal:5678/mcp
+```
 
 ## Observability
 
@@ -173,8 +225,13 @@ ruff format src/
 
 ## Requirements
 
+**Docker (Windows/Mac/Linux):**
+- Docker Desktop
+- Anthropic API key
+- LangSmith API key (free tier)
+
+**Local (Mac/Linux):**
 - Python >= 3.11
 - Node.js + yarn (for deep-agents-ui frontend)
 - Anthropic API key
-- LangSmith API key (free tier: https://smith.langchain.com)
-- MCP servers running (for agents that use them)
+- LangSmith API key (free tier)

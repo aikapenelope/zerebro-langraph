@@ -1,0 +1,15 @@
+.venv/
+venv/
+.env
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+.arize/
+.chainlit/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
