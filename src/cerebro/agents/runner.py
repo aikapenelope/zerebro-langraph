@@ -6,7 +6,6 @@ and creates a deepagents graph ready to handle messages.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +13,6 @@ from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.state import CompiledStateGraph
 
 from cerebro.agents.config import AgentConfig
@@ -26,7 +24,6 @@ from cerebro.agents.store import load_agent
 # ---------------------------------------------------------------------------
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DB_PATH = _PROJECT_ROOT / "cerebro.db"
 
 
 # ---------------------------------------------------------------------------
@@ -79,11 +76,6 @@ def _build_agent(
     Returns:
         A compiled LangGraph ready to process messages.
     """
-    # Shared SQLite checkpointer (same DB as cerebro, different thread_id)
-    conn = sqlite3.connect(str(_DB_PATH), check_same_thread=False)
-    checkpointer = SqliteSaver(conn=conn)
-    checkpointer.setup()
-
     # Backend for default middleware stack (virtual mode avoids issue #1776)
     backend = FilesystemBackend(
         root_dir=str(_PROJECT_ROOT),
@@ -95,11 +87,14 @@ def _build_agent(
     if config.skills:
         skills = [str(Path(s).resolve()) if not Path(s).is_absolute() else s for s in config.skills]
 
+    # NOTE: No checkpointer. Child agents are ephemeral (one-shot invocations
+    # from the run_agent tool). The langgraph API server manages persistence
+    # for the parent cerebro graph; child agents don't need it.
     return create_deep_agent(
         model=config.model,
         tools=list(tools),
         system_prompt=config.system_prompt,
-        checkpointer=checkpointer,
+        checkpointer=None,
         backend=backend,
         skills=skills,
         name=config.name,
