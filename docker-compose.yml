@@ -14,6 +14,12 @@ services:
       - "2024:2024"
     env_file:
       - .env
+    environment:
+      # MCP servers running on the host need host.docker.internal
+      - MCP_N8N_URL=${MCP_N8N_URL:-http://host.docker.internal:5678/mcp}
+      - MCP_REMOTION_URL=${MCP_REMOTION_URL:-http://host.docker.internal:3100/mcp}
+      - MCP_GRAFITI_URL=${MCP_GRAFITI_URL:-http://host.docker.internal:8001/mcp}
+      - MCP_MEM0_URL=${MCP_MEM0_URL:-http://host.docker.internal:8002/mcp}
     volumes:
       # Persist agent configs across restarts
       - agent-data:/app/src/cerebro/agents/configs
@@ -32,6 +38,9 @@ services:
       dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
+    environment:
+      # Pre-fill the LangSmith API key so the UI settings dialog has it ready
+      - NEXT_PUBLIC_LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
     depends_on:
       backend:
         condition: service_healthy

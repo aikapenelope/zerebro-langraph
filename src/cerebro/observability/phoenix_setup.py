@@ -16,9 +16,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Ensure LangSmith tracing is disabled (we use Phoenix instead)
-os.environ.setdefault("LANGSMITH_TRACING", "false")
-
 _initialized = False
 
 
@@ -26,6 +23,10 @@ def setup_observability() -> bool:
     """Start Phoenix and instrument LangChain.
 
     The Phoenix port is controlled by the PHOENIX_PORT env var (default 6006).
+
+    If Phoenix starts successfully and the user has not explicitly set
+    LANGSMITH_TRACING, it is defaulted to "false" to avoid sending
+    duplicate traces to both Phoenix and LangSmith.
 
     Returns:
         True if Phoenix started successfully, False otherwise.
@@ -44,6 +45,11 @@ def setup_observability() -> bool:
         px.launch_app()
         LangChainInstrumentor().instrument()
         _initialized = True
+
+        # Only default LANGSMITH_TRACING to false when Phoenix is active.
+        # If the user explicitly set LANGSMITH_TRACING=true in .env, respect it.
+        os.environ.setdefault("LANGSMITH_TRACING", "false")
+
         logger.info("Phoenix tracing active on http://localhost:%s", phoenix_port)
         return True
 

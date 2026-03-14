@@ -13,7 +13,7 @@ COPY src/ src/
 
 # Install the project and langgraph CLI with in-memory runtime
 # (no Postgres/Redis needed -- the inmem runtime handles persistence)
-RUN pip install --no-cache-dir -e "." "langgraph-cli[inmem]>=0.4.0"
+RUN pip install --no-cache-dir -e "." "langgraph-cli[inmem]~=0.4.17"
 
 # langgraph dev serves on port 2024
 EXPOSE 2024

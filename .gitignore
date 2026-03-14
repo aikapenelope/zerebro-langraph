@@ -10,6 +10,12 @@ venv/
 # Environment
 .env
 
+# LangGraph dev runtime cache
+.langgraph_api/
+
+# Linter/formatter cache
+.ruff_cache/
+
 # IDE
 .vscode/
 .idea/
