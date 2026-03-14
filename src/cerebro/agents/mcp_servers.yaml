@@ -1,0 +1,28 @@
+# MCP Server Registry
+# URLs support environment variable expansion: ${MCP_N8N_URL}
+# All servers use HTTP transport for reliability (not stdio).
+
+servers:
+  - name: n8n
+    url: ${MCP_N8N_URL}
+    description: "n8n workflow automation - create, trigger, and manage workflows"
+    transport: http
+    enabled: true
+
+  - name: remotion
+    url: ${MCP_REMOTION_URL}
+    description: "Remotion video creation - generate and render videos programmatically"
+    transport: http
+    enabled: true
+
+  - name: grafiti
+    url: ${MCP_GRAFITI_URL}
+    description: "Grafiti knowledge graph - store and query structured knowledge"
+    transport: http
+    enabled: true
+
+  - name: mem0
+    url: ${MCP_MEM0_URL}
+    description: "mem0 memory layer - persistent semantic memory for agents"
+    transport: http
+    enabled: true

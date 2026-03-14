@@ -1,0 +1,46 @@
+[project]
+name = "zerebro"
+version = "0.1.0"
+description = "Personal AI cerebro - multi-agent system with MCP integrations"
+requires-python = ">=3.11,<4.0"
+license = "Apache-2.0"
+dependencies = [
+    # --- LangChain ecosystem (all langchain-ai maintained) ---
+    "deepagents==0.4.11",
+    "langchain>=1.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "langchain-mcp-adapters>=0.1.0",
+    "langgraph>=1.1.0",
+    "langgraph-checkpoint-sqlite>=3.0.0",
+    # --- OpenAI (configured but inactive, uncomment to enable) ---
+    # "langchain-openai>=0.3.0",
+    # --- Observability (optional, remove without breaking anything) ---
+    "arize-phoenix>=8.0.0",
+    "openinference-instrumentation-langchain>=0.1.0",
+    # --- Utilities ---
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyright>=1.1.0",
+    "ruff>=0.9.0",
+]
+openai = [
+    "langchain-openai>=0.3.0",
+]
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
