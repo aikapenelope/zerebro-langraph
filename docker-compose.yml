@@ -1,7 +1,7 @@
 # Zerebro — docker compose up and go.
 #
 # 1. Copy .env.example to .env and fill in your keys
-# 2. docker compose up
+# 2. docker compose up --build
 # 3. Open http://localhost:3000
 #    - Deployment URL: http://localhost:2024
 #    - Assistant ID: cerebro
@@ -15,36 +15,27 @@ services:
     env_file:
       - .env
     volumes:
-      # Persist agent configs and SQLite DB across restarts
+      # Persist agent configs across restarts
       - agent-data:/app/src/cerebro/agents/configs
-      - db-data:/app
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:2024/ok')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Next.js frontend: deep-agents-ui
   frontend:
-    image: node:20-slim
-    working_dir: /app
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
-    environment:
-      # Tell the UI where the backend is (from the browser's perspective)
-      - NEXT_PUBLIC_DEPLOYMENT_URL=http://localhost:2024
-    volumes:
-      - ui-cache:/app
-    command: >
-      sh -c "
-        if [ ! -f /app/package.json ]; then
-          apt-get update && apt-get install -y git &&
-          git clone --depth 1 https://github.com/langchain-ai/deep-agents-ui.git /app &&
-          corepack enable && yarn install;
-        fi &&
-        corepack enable && yarn dev --hostname 0.0.0.0
-      "
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   agent-data:
-  db-data:
-  ui-cache:

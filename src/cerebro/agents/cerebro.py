@@ -8,12 +8,10 @@ delegates to the agent runner which instantiates the agent from its config.
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 
 from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.state import CompiledStateGraph
 
 from cerebro.agents.config import DEFAULT_MODEL
@@ -24,7 +22,6 @@ from cerebro.agents.meta_tools import get_meta_tools
 # ---------------------------------------------------------------------------
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DB_PATH = _PROJECT_ROOT / "cerebro.db"
 _SKILLS_DIR = _PROJECT_ROOT / "src" / "cerebro" / "skills"
 
 # ---------------------------------------------------------------------------
@@ -44,6 +41,7 @@ MCP server connections.
 - **View** the full configuration of any agent.
 - **Update** an agent's config (prompt, model, MCP servers, skills, enabled).
 - **Delete** agents you no longer need.
+- **Run** agents you have created by sending them a message.
 - **Manage MCP servers**: list available servers, add new ones, remove old ones.
 - **Manage skills**: add or remove skill files from agents.
 
@@ -56,6 +54,12 @@ which MCP servers does it need?).
 3. Call `create_agent_config` with the name, description, system prompt, and \
 any MCP servers the agent should connect to.
 4. Confirm to the user what you created and how to use it.
+
+## Running agents
+
+When the user asks you to run an agent, use the `run_agent` tool with the \
+agent name and the message to send. The agent will be instantiated from its \
+config, connected to its MCP servers, and will process the message.
 
 ## Available MCP servers
 
@@ -91,8 +95,8 @@ def create_cerebro() -> CompiledStateGraph:
 
     The graph is configured with:
     - Claude Haiku 4.5 as the LLM
-    - Meta-tools for agent CRUD, MCP management, and skill management
-    - SQLite checkpointer for conversation persistence
+    - Meta-tools for agent CRUD, MCP management, skill management, and run_agent
+    - No checkpointer (langgraph dev/API server manages persistence)
     - FilesystemBackend in virtual mode (no real shell, avoids issue #1776)
     - Default middleware stack (TodoList, Filesystem, SubAgent,
       Summarization, AnthropicPromptCaching, PatchToolCalls)
@@ -100,11 +104,6 @@ def create_cerebro() -> CompiledStateGraph:
     Returns:
         A CompiledStateGraph ready to be served by LangGraph Studio.
     """
-    # Checkpointer: SQLite file next to the project root
-    conn = sqlite3.connect(str(_DB_PATH), check_same_thread=False)
-    checkpointer = SqliteSaver(conn=conn)
-    checkpointer.setup()
-
     # Backend for middleware (virtual mode avoids stdin hang, issue #1776).
     # Passed to create_deep_agent so the default middleware stack
     # (including SummarizationMiddleware) uses it instead of StateBackend.
@@ -121,11 +120,15 @@ def create_cerebro() -> CompiledStateGraph:
             # Use absolute paths to avoid deepagents issue #934
             skills = [str(f.resolve()) for f in skill_files]
 
+    # NOTE: No checkpointer here. The langgraph dev server (and langgraph API
+    # in Docker) injects its own checkpointer at runtime via graph.copy().
+    # Providing our own SqliteSaver causes conflicts. See:
+    # https://langchain-ai.github.io/langgraph/concepts/langgraph_server/
     return create_deep_agent(
         model=DEFAULT_MODEL,
         tools=get_meta_tools(),
         system_prompt=CEREBRO_PROMPT,
-        checkpointer=checkpointer,
+        checkpointer=None,
         backend=backend,
         skills=skills,
         name="cerebro",

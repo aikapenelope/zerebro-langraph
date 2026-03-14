@@ -8,14 +8,17 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy project files
-COPY pyproject.toml langgraph.json ./
+COPY pyproject.toml langgraph.json .env* ./
 COPY src/ src/
 
-# Install the project and langgraph CLI (inmem mode = dev server, no Postgres/Redis)
+# Install the project and langgraph CLI with in-memory runtime
+# (no Postgres/Redis needed -- the inmem runtime handles persistence)
 RUN pip install --no-cache-dir -e "." "langgraph-cli[inmem]>=0.4.0"
 
-# langgraph dev listens on 2024 by default
+# langgraph dev serves on port 2024
 EXPOSE 2024
 
-# Run the LangGraph dev server, binding to 0.0.0.0 so Docker can reach it
-CMD ["langgraph", "dev", "--host", "0.0.0.0", "--port", "2024", "--no-browser"]
+# --no-reload: disable file watcher (no source changes in container)
+# --no-browser: don't try to open a browser
+# --host 0.0.0.0: accept connections from outside the container
+CMD ["langgraph", "dev", "--host", "0.0.0.0", "--port", "2024", "--no-reload", "--no-browser"]
