@@ -18,8 +18,6 @@ dependencies = [
     # --- Observability (optional, remove without breaking anything) ---
     "arize-phoenix>=8.0.0",
     "openinference-instrumentation-langchain>=0.1.0",
-    # --- UI ---
-    "chainlit>=2.10.0",
     # --- Utilities ---
     "pyyaml>=6.0",
     "python-dotenv>=1.0.0",

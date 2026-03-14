@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Launch the cerebro meta-agent.
+# Launch the cerebro meta-agent backend.
 #
 # Prerequisites:
-#   1. Copy .env.example to .env and fill in your ANTHROPIC_API_KEY
+#   1. Copy .env.example to .env and fill in ANTHROPIC_API_KEY + LANGSMITH_API_KEY
 #   2. Install deps: pip install -e ".[dev]"
 #
 # Usage:
-#   ./run.sh              # starts Chainlit chat UI on localhost:8000
-#   ./run.sh studio       # starts LangGraph dev server for LangSmith Studio
-#   ./run.sh --port 3000  # Chainlit on custom port
+#   ./run.sh          # starts LangGraph dev server on localhost:2024
+#
+# Then in a separate terminal, start the deep-agents-ui frontend:
+#   cd deep-agents-ui && yarn dev
+#   Open http://localhost:3000 and set Deployment URL = http://localhost:2024, Assistant ID = cerebro
 
 set -euo pipefail
 
@@ -29,19 +31,11 @@ if [ -f ".env" ]; then
     set +a
 fi
 
-MODE="${1:-chat}"
-
-if [ "$MODE" = "studio" ]; then
-    shift
-    echo "Starting Cerebro via LangGraph Studio..."
-    echo "  Connect LangSmith Studio to http://localhost:2024"
-    echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
-    echo ""
-    exec langgraph dev "$@"
-else
-    echo "Starting Cerebro chat UI..."
-    echo "  UI: http://localhost:8000"
-    echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
-    echo ""
-    exec chainlit run app.py -w "$@"
-fi
+echo "Starting Cerebro backend (LangGraph dev server)..."
+echo "  API: http://localhost:2024"
+echo "  Phoenix: http://localhost:${PHOENIX_PORT:-6006} (if enabled)"
+echo ""
+echo "  Frontend: start deep-agents-ui separately (yarn dev → http://localhost:3000)"
+echo "  Set Deployment URL = http://localhost:2024, Assistant ID = cerebro"
+echo ""
+exec langgraph dev "$@"
