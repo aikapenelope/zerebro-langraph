@@ -18,7 +18,7 @@ A **deepagents**-based meta-agent ("cerebro") that creates and manages other AI 
 │  │  ┌──────────────────────────────────────────┐  │  │
 │  │  │  Cerebro (meta-agent)                    │  │  │
 │  │  │  - Claude Haiku 4.5                      │  │  │
-│  │  │  - SQLite checkpointer                   │  │  │
+│  │  │  - Managed persistence (langgraph API)    │  │  │
 │  │  │  - 20 tools (9 built-in + 11 meta-tools) │  │  │
 │  │  └──────────┬───────────────────────────────┘  │  │
 │  │             │ creates/manages/runs              │  │
@@ -181,7 +181,7 @@ zerebro-langraph/
 | **deep-agents-ui** | Official deepagents frontend with native file/todo/sub-agent/debug support |
 | **MCP HTTP transport** | Avoids stdio issues (deepagents #641, #1778) |
 | **YAML configs on disk** | Simple, git-friendly, no database needed for agent definitions |
-| **SQLite checkpointer** | Zero-config persistence for single user |
+| **Managed persistence** | langgraph API injects its own checkpointer at runtime; no user-side config needed |
 | **LangSmith free tier** | Required for `langgraph dev` + SDK; free tier sufficient for personal use |
 | **Docker Compose** | One command to run everything on any OS (Windows, Mac, Linux) |
 
